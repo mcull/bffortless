@@ -37,7 +37,7 @@ export async function POST() {
     // Get all calendars
     const calendars = await calendar.calendarList.list();
     
-    let birthdayEvents = [];
+    const birthdayEvents = [];
     
     // Look through each calendar for birthday events
     for (const cal of calendars.data.items || []) {
