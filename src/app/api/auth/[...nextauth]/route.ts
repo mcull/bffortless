@@ -30,7 +30,7 @@ const handler = NextAuth({
     }),
   ],
   callbacks: {
-    async signIn({ user, account, profile, email }) {
+    async signIn({ user, account, profile }) {
       try {
         console.log('[NextAuth] SignIn callback started:', JSON.stringify({ 
           user: { id: user?.id, email: user?.email }, 
