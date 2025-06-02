@@ -1,6 +1,6 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { PrismaClient } from "@prisma/client";
-import NextAuth, { DefaultSession, NextAuthOptions } from "next-auth";
+import NextAuth, { DefaultSession } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
 declare module "next-auth" {
@@ -13,7 +13,7 @@ declare module "next-auth" {
 
 const prisma = new PrismaClient();
 
-export const authOptions: NextAuthOptions = {
+const handler = NextAuth({
   adapter: PrismaAdapter(prisma),
   providers: [
     GoogleProvider({
@@ -46,60 +46,60 @@ export const authOptions: NextAuthOptions = {
           }
         }, null, 2));
 
-        if (!user.email) {
-          console.error('[NextAuth] SignIn failed: No email provided');
-          return false;
-        }
+        // If we have a user email, allow sign in
+        if (user.email) {
+          // Check if this OAuth account is already linked to a user
+          const existingAccount = await prisma.account.findFirst({
+            where: {
+              provider: account?.provider,
+              providerAccountId: account?.providerAccountId,
+            },
+            include: {
+              user: true,
+            },
+          });
 
-        // Check if this OAuth account is already linked to a user
-        const existingAccount = await prisma.account.findFirst({
-          where: {
-            provider: account?.provider,
-            providerAccountId: account?.providerAccountId,
-          },
-          include: {
-            user: true,
-          },
-        });
+          if (existingAccount) {
+            console.log('[NextAuth] Found existing account:', JSON.stringify(existingAccount, null, 2));
+            return true;
+          }
 
-        if (existingAccount) {
-          console.log('[NextAuth] Found existing account:', JSON.stringify(existingAccount, null, 2));
+          // Check if user exists with this email
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email },
+            include: {
+              accounts: true,
+            },
+          });
+
+          console.log('[NextAuth] Existing user check:', JSON.stringify(existingUser, null, 2));
+
+          if (existingUser) {
+            // If user exists but has no account, link the account
+            if (existingUser.accounts.length === 0) {
+              await prisma.account.create({
+                data: {
+                  userId: existingUser.id,
+                  type: account?.type || 'oauth',
+                  provider: account?.provider || 'google',
+                  providerAccountId: account?.providerAccountId || '',
+                  access_token: account?.access_token,
+                  expires_at: account?.expires_at,
+                  token_type: account?.token_type,
+                  scope: account?.scope,
+                  id_token: account?.id_token,
+                  session_state: account?.session_state,
+                },
+              });
+              console.log('[NextAuth] Linked new account to existing user');
+            }
+          }
+
           return true;
         }
 
-        // Check if user exists with this email
-        const existingUser = await prisma.user.findUnique({
-          where: { email: user.email },
-          include: {
-            accounts: true,
-          },
-        });
-
-        console.log('[NextAuth] Existing user check:', JSON.stringify(existingUser, null, 2));
-
-        if (existingUser && account) {
-          // If user exists but has no account, link the account
-          if (existingUser.accounts.length === 0) {
-            await prisma.account.create({
-              data: {
-                userId: existingUser.id,
-                type: account.type || 'oauth',
-                provider: account.provider || 'google',
-                providerAccountId: account.providerAccountId || '',
-                access_token: account.access_token,
-                expires_at: account.expires_at,
-                token_type: account.token_type,
-                scope: account.scope,
-                id_token: account.id_token,
-                session_state: account.session_state,
-                refresh_token: account.refresh_token,
-              },
-            });
-            console.log('[NextAuth] Linked new account to existing user');
-          }
-        }
-
-        return true;
+        console.error('[NextAuth] SignIn failed: No email provided');
+        return false;
       } catch (error) {
         console.error('[NextAuth] SignIn callback error:', error instanceof Error ? {
           message: error.message,
@@ -143,22 +143,26 @@ export const authOptions: NextAuthOptions = {
           isSameOrigin: url.startsWith(baseUrl)
         }, null, 2));
         
+        // Always redirect to the home page after sign in
         if (url.includes('/api/auth/signin') || url.includes('/api/auth/callback')) {
           console.log('[NextAuth] Redirecting to home after auth:', baseUrl);
           return baseUrl;
         }
         
+        // Handle relative URLs
         if (url.startsWith('/')) {
           const fullUrl = `${baseUrl}${url}`;
           console.log('[NextAuth] Redirecting to relative URL:', fullUrl);
           return fullUrl;
         }
         
+        // Handle absolute URLs from the same origin
         if (url.startsWith(baseUrl)) {
           console.log('[NextAuth] Redirecting to same-origin URL:', url);
           return url;
         }
         
+        // Default to home page
         console.log('[NextAuth] Redirecting to base URL:', baseUrl);
         return baseUrl;
       } catch (error) {
@@ -199,11 +203,6 @@ export const authOptions: NextAuthOptions = {
     strategy: "database",
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
-  jwt: {
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-  },
-};
+});
 
-const handler = NextAuth(authOptions);
-
-export { handler as GET, handler as POST };
+export { handler as GET, handler as POST }; 
