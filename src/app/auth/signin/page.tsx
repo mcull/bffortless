@@ -12,11 +12,12 @@ function SignInContent() {
   const callbackUrl = searchParams.get('callbackUrl') || '/';
 
   useEffect(() => {
-    console.log('[SignIn] Initial render:', {
+    // Stringify objects for better logging
+    console.log('[SignIn] Initial render:', JSON.stringify({
       status,
       error,
       callbackUrl
-    });
+    }, null, 2));
 
     if (status === 'authenticated') {
       console.log('[SignIn] User is authenticated, redirecting to:', callbackUrl);
@@ -24,7 +25,11 @@ function SignInContent() {
     }
 
     if (error) {
-      console.error('[SignIn] Auth error:', { error, callbackUrl });
+      console.error('[SignIn] Auth error:', JSON.stringify({
+        error,
+        callbackUrl,
+        status
+      }, null, 2));
     }
   }, [status, router, error, callbackUrl]);
 
@@ -33,11 +38,17 @@ function SignInContent() {
       console.log('[SignIn] Starting Google sign in with callbackUrl:', callbackUrl);
       const result = await signIn('google', { 
         callbackUrl: callbackUrl,
-        redirect: true
+        redirect: false // Change to false to handle redirect manually
       });
-      console.log('[SignIn] Sign in result:', result);
+      console.log('[SignIn] Sign in result:', JSON.stringify(result, null, 2));
+      
+      if (result?.error) {
+        console.error('[SignIn] Sign in failed:', result.error);
+      } else if (result?.url) {
+        router.push(result.url);
+      }
     } catch (error) {
-      console.error('[SignIn] Sign in error:', error);
+      console.error('[SignIn] Sign in error:', error instanceof Error ? error.message : 'Unknown error');
     }
   };
 

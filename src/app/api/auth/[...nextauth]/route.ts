@@ -31,43 +31,62 @@ const handler = NextAuth({
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
-      console.log('[NextAuth] SignIn callback started:', { 
-        user: { id: user.id, email: user.email }, 
-        account: { provider: account?.provider, type: account?.type },
-        profile: { sub: profile?.sub }
-      });
-      return true;
+      try {
+        console.log('[NextAuth] SignIn callback started:', JSON.stringify({ 
+          user: { id: user.id, email: user.email }, 
+          account: { provider: account?.provider, type: account?.type },
+          profile: { sub: profile?.sub }
+        }, null, 2));
+        return true;
+      } catch (error) {
+        console.error('[NextAuth] SignIn callback error:', error instanceof Error ? error.message : 'Unknown error');
+        return false;
+      }
     },
     async session({ session, user }) {
-      console.log('[NextAuth] Session callback:', { 
-        sessionUser: session?.user,
-        dbUser: { id: user?.id, email: user?.email }
-      });
-      if (session.user) {
-        session.user.id = user.id;
+      try {
+        console.log('[NextAuth] Session callback:', JSON.stringify({ 
+          sessionUser: session?.user,
+          dbUser: { id: user?.id, email: user?.email }
+        }, null, 2));
+        if (session.user) {
+          session.user.id = user.id;
+        }
+        return session;
+      } catch (error) {
+        console.error('[NextAuth] Session callback error:', error instanceof Error ? error.message : 'Unknown error');
+        return session;
       }
-      return session;
     },
     async redirect({ url, baseUrl }) {
-      console.log('[NextAuth] Redirect callback:', { url, baseUrl });
-      if (url.startsWith(baseUrl)) {
-        return url;
-      } else if (url.startsWith('/')) {
-        return new URL(url, baseUrl).toString();
+      try {
+        console.log('[NextAuth] Redirect callback:', JSON.stringify({ url, baseUrl }, null, 2));
+        // First try to handle relative URLs
+        if (url.startsWith('/')) {
+          return `${baseUrl}${url}`;
+        }
+        // Then handle URLs from the same origin
+        if (url.startsWith(baseUrl)) {
+          return url;
+        }
+        // Default to base URL
+        return baseUrl;
+      } catch (error) {
+        console.error('[NextAuth] Redirect callback error:', error instanceof Error ? error.message : 'Unknown error');
+        return baseUrl;
       }
-      return baseUrl;
     },
   },
   debug: true,
   logger: {
     error(code, metadata) {
-      console.error('[NextAuth] Error:', { code, metadata });
+      console.error('[NextAuth] Error:', JSON.stringify({ code, metadata }, null, 2));
     },
     warn(code) {
-      console.warn('[NextAuth] Warning:', { code });
+      console.warn('[NextAuth] Warning:', JSON.stringify({ code }, null, 2));
     },
     debug(code, metadata) {
-      console.log('[NextAuth] Debug:', { code, metadata });
+      console.log('[NextAuth] Debug:', JSON.stringify({ code, metadata }, null, 2));
     }
   },
   pages: {
