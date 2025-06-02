@@ -8,17 +8,18 @@ import FriendsList from '@/components/FriendsList';
 import Image from 'next/image';
 
 export default function Home() {
-  const { data: session, status } = useSession();
+  const { data: session, status } = useSession({
+    required: true,
+    onUnauthenticated() {
+      router.push('/auth/signin');
+    },
+  });
   const router = useRouter();
 
   useEffect(() => {
-    console.log('Session status:', status);
-    console.log('Session data:', session);
-    
-    if (status === 'unauthenticated') {
-      router.push('/auth/signin');
-    }
-  }, [status, router, session]);
+    console.log('Home page - Session status:', status);
+    console.log('Home page - Session data:', session);
+  }, [status, session]);
 
   const importBirthdays = async () => {
     try {
@@ -32,7 +33,6 @@ export default function Home() {
 
       const data = await response.json();
       toast.success(`Successfully imported ${data.count} birthdays!`);
-      // Refresh the page to show new birthdays
       router.refresh();
     } catch (error) {
       toast.error('Failed to import birthdays. Please try again.');
@@ -48,16 +48,8 @@ export default function Home() {
     );
   }
 
-  if (status === 'unauthenticated') {
-    return null; // Will redirect in useEffect
-  }
-
   if (!session?.user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl text-red-600">Session error. Please try signing in again.</div>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -80,7 +72,10 @@ export default function Home() {
               {session.user.name || session.user.email}
             </span>
             <button
-              onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+              onClick={() => {
+                console.log('Signing out...');
+                signOut({ callbackUrl: '/auth/signin' });
+              }}
               className="text-sm text-gray-500 hover:text-gray-700"
             >
               Sign out

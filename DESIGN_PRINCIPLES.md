@@ -2,7 +2,7 @@
 
 ## Core Philosophy
 
-BFfortless is built on the principle that being a good friend shouldn't require constant manual effort. Our design decisions are guided by making birthday remembrance and celebration as automatic and effortless as possible while maintaining a personal touch.
+Bffortless is an assistive device that helps caring, well-intentioned people show up as their best selves. Our design decisions are guided by making birthday remembrance and celebration as automatic and effortless as possible while maintaining a personal touch.
 
 ## Design Pillars
 

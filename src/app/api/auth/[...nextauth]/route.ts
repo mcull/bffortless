@@ -22,18 +22,29 @@ const handler = NextAuth({
       authorization: {
         params: {
           scope: "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/calendar.readonly",
+          prompt: "consent",
         },
       },
     }),
   ],
   callbacks: {
+    async signIn({ user, account, profile }) {
+      console.log('SignIn callback:', { user, account, profile });
+      return true;
+    },
     async session({ session, user }) {
+      console.log('Session callback:', { session, user });
       if (session.user) {
         session.user.id = user.id;
       }
       return session;
     },
+    async redirect({ url, baseUrl }) {
+      console.log('Redirect callback:', { url, baseUrl });
+      return url.startsWith(baseUrl) ? url : baseUrl;
+    },
   },
+  debug: true,
   pages: {
     signIn: "/auth/signin",
   },
