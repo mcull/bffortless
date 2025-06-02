@@ -1,6 +1,6 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { PrismaClient } from "@prisma/client";
-import NextAuth, { DefaultSession } from "next-auth";
+import NextAuth, { DefaultSession, EventCallbacks } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
 declare module "next-auth" {
@@ -37,6 +37,13 @@ const handler = NextAuth({
           account: { provider: account?.provider, type: account?.type },
           profile: { sub: profile?.sub }
         }, null, 2));
+
+        // Ensure we have the required user data
+        if (!user.email) {
+          console.error('[NextAuth] SignIn failed: No email provided');
+          return false;
+        }
+
         return true;
       } catch (error) {
         console.error('[NextAuth] SignIn callback error:', error instanceof Error ? error.message : 'Unknown error');
@@ -49,6 +56,7 @@ const handler = NextAuth({
           sessionUser: session?.user,
           dbUser: { id: user?.id, email: user?.email }
         }, null, 2));
+
         if (session.user) {
           session.user.id = user.id;
         }
@@ -61,20 +69,35 @@ const handler = NextAuth({
     async redirect({ url, baseUrl }) {
       try {
         console.log('[NextAuth] Redirect callback:', JSON.stringify({ url, baseUrl }, null, 2));
-        // First try to handle relative URLs
+        
+        // Handle relative URLs
         if (url.startsWith('/')) {
-          return `${baseUrl}${url}`;
+          const fullUrl = `${baseUrl}${url}`;
+          console.log('[NextAuth] Redirecting to relative URL:', fullUrl);
+          return fullUrl;
         }
-        // Then handle URLs from the same origin
+        
+        // Handle absolute URLs from the same origin
         if (url.startsWith(baseUrl)) {
+          console.log('[NextAuth] Redirecting to same-origin URL:', url);
           return url;
         }
-        // Default to base URL
+        
+        // Default to home page
+        console.log('[NextAuth] Redirecting to base URL:', baseUrl);
         return baseUrl;
       } catch (error) {
         console.error('[NextAuth] Redirect callback error:', error instanceof Error ? error.message : 'Unknown error');
         return baseUrl;
       }
+    },
+  },
+  events: {
+    async signIn({ user }) {
+      console.log('[NextAuth] SignIn event:', JSON.stringify({ user }, null, 2));
+    },
+    async signOut({ session, token }) {
+      console.log('[NextAuth] SignOut event:', JSON.stringify({ session, token }, null, 2));
     },
   },
   debug: true,
