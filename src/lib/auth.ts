@@ -1,8 +1,7 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { PrismaClient } from "@prisma/client";
-import NextAuth from "next-auth";
+import { NextAuthOptions, DefaultSession } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-import { authOptions } from "@/lib/auth";
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
@@ -204,7 +203,3 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
 };
-
-const handler = NextAuth(authOptions);
-
-export { handler as GET, handler as POST };
