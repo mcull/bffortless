@@ -30,31 +30,61 @@ const handler = NextAuth({
     }),
   ],
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account, profile, email }) {
       try {
         console.log('[NextAuth] SignIn callback started:', JSON.stringify({ 
-          user: { id: user.id, email: user.email }, 
-          account: { provider: account?.provider, type: account?.type },
-          profile: { sub: profile?.sub }
+          user: { id: user?.id, email: user?.email }, 
+          account: { 
+            provider: account?.provider, 
+            type: account?.type,
+            scope: account?.scope,
+            token_type: account?.token_type,
+            expires_at: account?.expires_at
+          },
+          profile: { 
+            sub: profile?.sub
+          }
         }, null, 2));
 
         // Ensure we have the required user data
-        if (!user.email) {
+        if (!user?.email) {
           console.error('[NextAuth] SignIn failed: No email provided');
+          return false;
+        }
+
+        // Ensure we have the required account data
+        if (!account?.access_token) {
+          console.error('[NextAuth] SignIn failed: No access token provided');
+          return false;
+        }
+
+        // Verify the account is from Google
+        if (account?.provider !== 'google') {
+          console.error('[NextAuth] SignIn failed: Invalid provider');
           return false;
         }
 
         return true;
       } catch (error) {
-        console.error('[NextAuth] SignIn callback error:', error instanceof Error ? error.message : 'Unknown error');
+        console.error('[NextAuth] SignIn callback error:', error instanceof Error ? {
+          message: error.message,
+          stack: error.stack
+        } : 'Unknown error');
         return false;
       }
     },
     async session({ session, user }) {
       try {
         console.log('[NextAuth] Session callback:', JSON.stringify({ 
-          sessionUser: session?.user,
-          dbUser: { id: user?.id, email: user?.email }
+          sessionUser: { 
+            name: session?.user?.name,
+            email: session?.user?.email,
+            image: session?.user?.image
+          },
+          dbUser: { 
+            id: user?.id, 
+            email: user?.email 
+          }
         }, null, 2));
 
         if (session.user) {
@@ -62,13 +92,27 @@ const handler = NextAuth({
         }
         return session;
       } catch (error) {
-        console.error('[NextAuth] Session callback error:', error instanceof Error ? error.message : 'Unknown error');
+        console.error('[NextAuth] Session callback error:', error instanceof Error ? {
+          message: error.message,
+          stack: error.stack
+        } : 'Unknown error');
         return session;
       }
     },
     async redirect({ url, baseUrl }) {
       try {
-        console.log('[NextAuth] Redirect callback:', JSON.stringify({ url, baseUrl }, null, 2));
+        console.log('[NextAuth] Redirect callback:', JSON.stringify({ 
+          url, 
+          baseUrl,
+          isRelative: url.startsWith('/'),
+          isSameOrigin: url.startsWith(baseUrl)
+        }, null, 2));
+        
+        // Always redirect to the home page after sign in
+        if (url.includes('/api/auth/signin') || url.includes('/api/auth/callback')) {
+          console.log('[NextAuth] Redirecting to home after auth:', baseUrl);
+          return baseUrl;
+        }
         
         // Handle relative URLs
         if (url.startsWith('/')) {
@@ -87,7 +131,10 @@ const handler = NextAuth({
         console.log('[NextAuth] Redirecting to base URL:', baseUrl);
         return baseUrl;
       } catch (error) {
-        console.error('[NextAuth] Redirect callback error:', error instanceof Error ? error.message : 'Unknown error');
+        console.error('[NextAuth] Redirect callback error:', error instanceof Error ? {
+          message: error.message,
+          stack: error.stack
+        } : 'Unknown error');
         return baseUrl;
       }
     },
