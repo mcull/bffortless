@@ -46,25 +46,60 @@ const handler = NextAuth({
           }
         }, null, 2));
 
-        // Ensure we have the required user data
-        if (!user?.email) {
-          console.error('[NextAuth] SignIn failed: No email provided');
-          return false;
+        // If we have a user email, allow sign in
+        if (user.email) {
+          // Check if this OAuth account is already linked to a user
+          const existingAccount = await prisma.account.findFirst({
+            where: {
+              provider: account?.provider,
+              providerAccountId: account?.providerAccountId,
+            },
+            include: {
+              user: true,
+            },
+          });
+
+          if (existingAccount) {
+            console.log('[NextAuth] Found existing account:', JSON.stringify(existingAccount, null, 2));
+            return true;
+          }
+
+          // Check if user exists with this email
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email },
+            include: {
+              accounts: true,
+            },
+          });
+
+          console.log('[NextAuth] Existing user check:', JSON.stringify(existingUser, null, 2));
+
+          if (existingUser) {
+            // If user exists but has no account, link the account
+            if (existingUser.accounts.length === 0) {
+              await prisma.account.create({
+                data: {
+                  userId: existingUser.id,
+                  type: account?.type || 'oauth',
+                  provider: account?.provider || 'google',
+                  providerAccountId: account?.providerAccountId || '',
+                  access_token: account?.access_token,
+                  expires_at: account?.expires_at,
+                  token_type: account?.token_type,
+                  scope: account?.scope,
+                  id_token: account?.id_token,
+                  session_state: account?.session_state,
+                },
+              });
+              console.log('[NextAuth] Linked new account to existing user');
+            }
+          }
+
+          return true;
         }
 
-        // Ensure we have the required account data
-        if (!account?.access_token) {
-          console.error('[NextAuth] SignIn failed: No access token provided');
-          return false;
-        }
-
-        // Verify the account is from Google
-        if (account?.provider !== 'google') {
-          console.error('[NextAuth] SignIn failed: Invalid provider');
-          return false;
-        }
-
-        return true;
+        console.error('[NextAuth] SignIn failed: No email provided');
+        return false;
       } catch (error) {
         console.error('[NextAuth] SignIn callback error:', error instanceof Error ? {
           message: error.message,
