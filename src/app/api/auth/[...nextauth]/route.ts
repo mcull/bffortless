@@ -29,24 +29,44 @@ const handler = NextAuth({
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
-      console.log('SignIn callback:', { user, account, profile });
+      console.log('[NextAuth] SignIn callback started:', { 
+        user: { id: user.id, email: user.email }, 
+        account: { provider: account?.provider, type: account?.type },
+        profile: { sub: profile?.sub }
+      });
       return true;
     },
     async session({ session, user }) {
-      console.log('Session callback:', { session, user });
+      console.log('[NextAuth] Session callback:', { 
+        sessionUser: session?.user,
+        dbUser: { id: user?.id, email: user?.email }
+      });
       if (session.user) {
         session.user.id = user.id;
       }
       return session;
     },
     async redirect({ url, baseUrl }) {
-      console.log('Redirect callback:', { url, baseUrl });
-      return url.startsWith(baseUrl) ? url : baseUrl;
+      console.log('[NextAuth] Redirect callback:', { url, baseUrl });
+      // Always redirect to the base URL for now to debug
+      return baseUrl;
     },
   },
   debug: true,
+  logger: {
+    error(code, metadata) {
+      console.error('[NextAuth] Error:', { code, metadata });
+    },
+    warn(code) {
+      console.warn('[NextAuth] Warning:', { code });
+    },
+    debug(code, metadata) {
+      console.log('[NextAuth] Debug:', { code, metadata });
+    }
+  },
   pages: {
     signIn: "/auth/signin",
+    error: "/auth/error",
   },
 });
 

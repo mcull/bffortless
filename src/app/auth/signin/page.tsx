@@ -1,37 +1,50 @@
 'use client';
 
 import { signIn, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 
 export default function SignIn() {
   const { status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const error = searchParams.get('error');
+  const callbackUrl = searchParams.get('callbackUrl');
 
   useEffect(() => {
+    console.log('[SignIn] Initial render:', {
+      status,
+      error,
+      callbackUrl
+    });
+
     if (status === 'authenticated') {
-      console.log('User is authenticated, redirecting to home');
+      console.log('[SignIn] User is authenticated, redirecting to home');
       router.push('/');
     }
-  }, [status, router]);
+
+    if (error) {
+      console.error('[SignIn] Auth error:', { error, callbackUrl });
+    }
+  }, [status, router, error, callbackUrl]);
 
   const handleSignIn = async () => {
     try {
-      console.log('Starting Google sign in...');
+      console.log('[SignIn] Starting Google sign in...');
       const result = await signIn('google', { 
         callbackUrl: '/',
         redirect: true
       });
-      console.log('Sign in result:', result);
+      console.log('[SignIn] Sign in result:', result);
     } catch (error) {
-      console.error('Sign in error:', error);
+      console.error('[SignIn] Sign in error:', error);
     }
   };
 
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div>Loading...</div>
+        <div className="text-lg">Checking authentication status...</div>
       </div>
     );
   }
@@ -39,7 +52,7 @@ export default function SignIn() {
   if (status === 'authenticated') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div>Redirecting...</div>
+        <div className="text-lg">Redirecting to home page...</div>
       </div>
     );
   }
@@ -54,6 +67,14 @@ export default function SignIn() {
           <p className="mt-2 text-center text-sm text-gray-600">
             Effortlessly manage birthday reminders
           </p>
+          {error && (
+            <div className="mt-4 p-3 bg-red-50 text-red-700 rounded-md">
+              {error === 'Callback' ? 
+                'There was an issue with the authentication callback. Please try again.' :
+                `Authentication error: ${error}`
+              }
+            </div>
+          )}
         </div>
         <div>
           <button
