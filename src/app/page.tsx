@@ -12,10 +12,13 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
+    console.log('Session status:', status);
+    console.log('Session data:', session);
+    
     if (status === 'unauthenticated') {
       router.push('/auth/signin');
     }
-  }, [status, router]);
+  }, [status, router, session]);
 
   const importBirthdays = async () => {
     try {
@@ -38,15 +41,31 @@ export default function Home() {
   };
 
   if (status === 'loading') {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-xl">Loading...</div>
+      </div>
+    );
+  }
+
+  if (status === 'unauthenticated') {
+    return null; // Will redirect in useEffect
+  }
+
+  if (!session?.user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-xl text-red-600">Session error. Please try signing in again.</div>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto relative">
         {/* User Profile Section */}
-        <div className="absolute top-4 right-4 flex items-center space-x-4">
-          {session?.user?.image && (
+        <div className="mb-8 flex items-center justify-end space-x-4">
+          {session.user.image && (
             <div className="relative w-10 h-10 rounded-full overflow-hidden">
               <Image
                 src={session.user.image}
@@ -58,10 +77,10 @@ export default function Home() {
           )}
           <div className="flex flex-col items-end">
             <span className="text-sm font-medium text-gray-900">
-              {session?.user?.name || session?.user?.email}
+              {session.user.name || session.user.email}
             </span>
             <button
-              onClick={() => signOut()}
+              onClick={() => signOut({ callbackUrl: '/auth/signin' })}
               className="text-sm text-gray-500 hover:text-gray-700"
             >
               Sign out
@@ -72,7 +91,7 @@ export default function Home() {
         <div className="text-center">
           <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
             Welcome to BFfortless
-            {session?.user?.name && (
+            {session.user.name && (
               <span className="block text-2xl mt-2 text-blue-600">
                 Hello, {session.user.name.split(' ')[0]}!
               </span>
