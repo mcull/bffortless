@@ -1,13 +1,14 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import toast from 'react-hot-toast';
 import FriendsList from '@/components/FriendsList';
+import Image from 'next/image';
 
 export default function Home() {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
 
   useEffect(() => {
@@ -43,9 +44,39 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
+        {/* User Profile Section */}
+        <div className="absolute top-4 right-4 flex items-center space-x-4">
+          {session?.user?.image && (
+            <div className="relative w-10 h-10 rounded-full overflow-hidden">
+              <Image
+                src={session.user.image}
+                alt="Profile"
+                fill
+                className="object-cover"
+              />
+            </div>
+          )}
+          <div className="flex flex-col items-end">
+            <span className="text-sm font-medium text-gray-900">
+              {session?.user?.name || session?.user?.email}
+            </span>
+            <button
+              onClick={() => signOut()}
+              className="text-sm text-gray-500 hover:text-gray-700"
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+
         <div className="text-center">
           <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
             Welcome to BFfortless
+            {session?.user?.name && (
+              <span className="block text-2xl mt-2 text-blue-600">
+                Hello, {session.user.name.split(' ')[0]}!
+              </span>
+            )}
           </h1>
           <p className="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4">
             Effortlessly manage birthday reminders for your friends with Google Calendar integration
