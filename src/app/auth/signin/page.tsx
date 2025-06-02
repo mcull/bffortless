@@ -9,7 +9,7 @@ function SignInContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
-  const callbackUrl = searchParams.get('callbackUrl');
+  const callbackUrl = searchParams.get('callbackUrl') || '/';
 
   useEffect(() => {
     console.log('[SignIn] Initial render:', {
@@ -19,8 +19,8 @@ function SignInContent() {
     });
 
     if (status === 'authenticated') {
-      console.log('[SignIn] User is authenticated, redirecting to home');
-      router.push('/');
+      console.log('[SignIn] User is authenticated, redirecting to:', callbackUrl);
+      router.push(callbackUrl);
     }
 
     if (error) {
@@ -30,9 +30,9 @@ function SignInContent() {
 
   const handleSignIn = async () => {
     try {
-      console.log('[SignIn] Starting Google sign in...');
+      console.log('[SignIn] Starting Google sign in with callbackUrl:', callbackUrl);
       const result = await signIn('google', { 
-        callbackUrl: '/',
+        callbackUrl: callbackUrl,
         redirect: true
       });
       console.log('[SignIn] Sign in result:', result);
@@ -52,7 +52,7 @@ function SignInContent() {
   if (status === 'authenticated') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-lg">Redirecting to home page...</div>
+        <div className="text-lg">Redirecting to {callbackUrl}...</div>
       </div>
     );
   }

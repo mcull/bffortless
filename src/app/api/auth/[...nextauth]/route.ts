@@ -23,6 +23,8 @@ const handler = NextAuth({
         params: {
           scope: "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/calendar.readonly",
           prompt: "consent",
+          access_type: "offline",
+          response_type: "code"
         },
       },
     }),
@@ -48,7 +50,11 @@ const handler = NextAuth({
     },
     async redirect({ url, baseUrl }) {
       console.log('[NextAuth] Redirect callback:', { url, baseUrl });
-      // Always redirect to the base URL for now to debug
+      if (url.startsWith(baseUrl)) {
+        return url;
+      } else if (url.startsWith('/')) {
+        return new URL(url, baseUrl).toString();
+      }
       return baseUrl;
     },
   },
@@ -67,6 +73,11 @@ const handler = NextAuth({
   pages: {
     signIn: "/auth/signin",
     error: "/auth/error",
+  },
+  secret: process.env.NEXTAUTH_SECRET,
+  session: {
+    strategy: "database",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
 });
 
