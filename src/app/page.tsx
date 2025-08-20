@@ -86,9 +86,9 @@ export default function Home() {
         <div className="text-center">
           <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
             Welcome to BFfortless
-            {session.user.name && (
+            {session.user.name?.trim() && (
               <span className="block text-2xl mt-2 text-blue-600">
-                Hello, {session.user.name.split(' ')[0]}!
+                Hello, {session.user.name.trim().split(' ')[0] || session.user.email?.split('@')[0]}!
               </span>
             )}
           </h1>

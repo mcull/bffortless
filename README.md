@@ -1,6 +1,6 @@
 # BFfortless
 
-BFfortless is a modern web application that helps you never forget a friend's birthday again. By seamlessly integrating with Google Calendar, it automatically imports and manages birthday reminders, making it effortless to be a better friend.
+Bffortless is a modern web application that helps you never forget a friend's birthday again. By seamlessly integrating with Google Calendar, it automatically imports and manages birthday reminders, making it effortless to be a better friend.
 
 ## Features
 
@@ -48,7 +48,7 @@ BFfortless is a modern web application that helps you never forget a friend's bi
    NEXTAUTH_SECRET="your-nextauth-secret"
    GOOGLE_CLIENT_ID="your-google-client-id"
    GOOGLE_CLIENT_SECRET="your-google-client-secret"
-   NEXTAUTH_URL="http://localhost:3000"
+    NEXTAUTH_URL="http://localhost:3000"
    ```
 
 4. Initialize the database:
